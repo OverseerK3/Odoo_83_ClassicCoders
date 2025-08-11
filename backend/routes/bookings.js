@@ -19,6 +19,34 @@ function auth(req, res, next) {
   }
 }
 
+// GET /api/bookings/my -> get current user's bookings
+router.get('/my', auth, async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    
+    let query = { user: req.userId };
+    if (status) query.status = status;
+
+    const bookings = await Booking.find(query)
+      .populate('venue', 'name location sport')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Booking.countDocuments(query);
+
+    res.json({
+      bookings,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
+    });
+  } catch (e) {
+    console.error('Get user bookings error:', e);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // POST /api/bookings -> create booking if slot free
 router.post('/', auth, async (req, res) => {
   try {
@@ -36,6 +64,27 @@ router.post('/', auth, async (req, res) => {
     await booking.save();
     res.status(201).json(booking);
   } catch (e) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/bookings/:id/cancel -> cancel a booking (user's own booking)
+router.put('/:id/cancel', auth, async (req, res) => {
+  try {
+    const booking = await Booking.findOne({ _id: req.params.id, user: req.userId });
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ message: 'Booking is already cancelled' });
+    }
+
+    booking.status = 'cancelled';
+    await booking.save();
+
+    // Notify waitlisted users (implement later if needed)
+    res.json({ message: 'Booking cancelled successfully', booking });
+  } catch (e) {
+    console.error('Cancel booking error:', e);
     res.status(500).json({ message: 'Server error' });
   }
 });
