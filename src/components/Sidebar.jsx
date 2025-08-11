@@ -29,12 +29,12 @@ const icons = {
 const API_BASE = 'http://localhost:5000/api/teams';
 
 const navs = [
-  { to: '/', label: 'Home', icon: icons.home },
-  { to: '/venues', label: 'Venues', icon: icons.venues },
-  { to: '/my-bookings', label: 'My Bookings', icon: icons.bookings },
-  { to: '/profile', label: 'Profile', icon: icons.profile },
-  { to: '/owner', label: 'facility Owner', icon: icons.owner },
-  { to: '/admin', label: 'Admin', icon: icons.admin },
+  { to: '/', label: 'Home', icon: icons.home, roles: ['player', 'facility_manager', 'admin'] },
+  { to: '/venues', label: 'Venues', icon: icons.venues, roles: ['player', 'facility_manager', 'admin'] },
+  { to: '/my-bookings', label: 'My Bookings', icon: icons.bookings, roles: ['player'] },
+  { to: '/profile', label: 'Profile', icon: icons.profile, roles: ['player', 'facility_manager', 'admin'] },
+  { to: '/owner', label: 'Facility Owner', icon: icons.owner, roles: ['facility_manager'] },
+  { to: '/admin', label: 'Admin Panel', icon: icons.admin, roles: ['admin'] },
 ];
 
 const Sidebar = ({ role }) => {
@@ -44,9 +44,13 @@ const Sidebar = ({ role }) => {
   const username = user?.username || user?.name || 'User';
   const avatar = user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=2563eb&color=fff`;
 
-  const navLinks = [...navs];
+  // Filter navigation links based on user role
+  let navLinks = navs.filter(nav => nav.roles.includes(user?.role || 'player'));
+  
+  // Add team management for players
   if (user?.role === 'player') {
-    navLinks.splice(3, 0, { to: '/my-team', label: 'My Team', icon: icons.users });
+    const teamNav = { to: '/my-team', label: 'My Team', icon: icons.users };
+    navLinks.splice(3, 0, teamNav); // Insert after venues
   }
 
   const token = useMemo(() => localStorage.getItem('token') || '', []);

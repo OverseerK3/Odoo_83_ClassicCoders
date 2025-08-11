@@ -7,7 +7,11 @@ const BookingSchema = new mongoose.Schema(
     date: { type: String, required: true, index: true }, // YYYY-MM-DD
     startTime: { type: String, required: true }, // e.g., '17:30'
     endTime: { type: String, required: true },
-    status: { type: String, enum: ['booked', 'cancelled'], default: 'booked', index: true },
+    status: { type: String, enum: ['booked', 'cancelled', 'completed'], default: 'booked', index: true },
+    totalAmount: { type: Number, default: 0 },
+    paymentStatus: { type: String, enum: ['pending', 'paid', 'refunded'], default: 'pending' },
+    courtName: { type: String }, // Which specific court within the venue
+    notes: { type: String }, // Additional booking notes
   },
   { timestamps: true }
 );

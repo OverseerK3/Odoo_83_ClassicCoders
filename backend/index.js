@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth'); // OTP-enabled auth
 const venuesRoutes = require('./routes/venues');
 const teamsRoutes = require('./routes/teams');
 const bookingsRoutes = require('./routes/bookings');
+const facilityRoutes = require('./routes/facility'); // New facility management routes
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/venues', venuesRoutes);
 app.use('/api/teams', teamsRoutes);
 app.use('/api/bookings', bookingsRoutes);
+app.use('/api/facility', facilityRoutes); // Facility management routes
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/quickcourt';
 
