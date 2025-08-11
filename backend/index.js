@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const venuesRoutes = require('./routes/venues');
+const teamsRoutes = require('./routes/teams');
+const bookingsRoutes = require('./routes/bookings');
 require('dotenv').config();
 
 const app = express();
@@ -16,6 +18,8 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/venues', venuesRoutes);
+app.use('/api/teams', teamsRoutes);
+app.use('/api/bookings', bookingsRoutes);
 
 // MongoDB Connection
 mongoose.connect('mongodb://localhost:27017/quickcourt', {
