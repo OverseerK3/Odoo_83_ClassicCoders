@@ -11,10 +11,9 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col items-center justify-center p-4 md:p-8 min-h-screen">
-      <div className="bg-white p-6 md:p-8 rounded shadow-md w-full max-w-md text-center">
-        <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Welcome to QuickCourt Dashboard!</h2>
-        <p className="mb-2 md:mb-4">You are logged in as <span className="font-semibold text-blue-700">{role.replace('_', ' ')}</span>.</p>
-        {/* Add more dashboard features here */}
+      <div className="card p-6 md:p-8 w-full max-w-md text-center">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-slate-800">Welcome to QuickCourt Dashboard!</h2>
+        <p className="mb-2 md:mb-4">You are logged in as <span className="font-semibold text-[var(--color-primary)]">{role.replace('_', ' ')}</span>.</p>
       </div>
     </div>
   );

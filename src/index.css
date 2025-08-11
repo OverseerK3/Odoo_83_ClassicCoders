@@ -1,7 +1,66 @@
 @import "tailwindcss";
 
+:root {
+  --color-primary: #2563EB; /* Tailwind Blue */
+  --color-secondary: #E11D48; /* Raspberry Red */
+  --color-bg: #FFFFFF; /* Clean white */
+  --color-text: #1F2937; /* Neutral dark gray */
+  --color-accent: #F59E0B; /* Amber */
+}
+
 html, body, #root {
   font-family: 'Ubuntu', sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Reusable UI primitives */
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: background 150ms ease;
+}
+.btn-primary:hover { background: #1d4ed8; }
+
+.btn-secondary {
+  background: var(--color-secondary);
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: background 150ms ease;
+}
+.btn-secondary:hover { background: #be123c; }
+
+.btn-outline {
+  background: #fff;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: background 150ms ease, color 150ms ease;
+}
+.btn-outline:hover { background: rgba(37, 99, 235, 0.06); }
+
+.badge-accent {
+  background: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
 .ubuntu-light {

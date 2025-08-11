@@ -23,49 +23,49 @@ const Home = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       {/* HERO SECTION */}
-      <section className="max-w-4xl md:max-w-5xl mx-auto mt-4 md:mt-8 px-2 md:px-0">
-        <div className="relative rounded-xl overflow-hidden shadow-lg">
+      <section className="max-w-5xl mx-auto mt-4 md:mt-10 px-3 md:px-4">
+        <div className="relative rounded-2xl overflow-hidden shadow-md card">
           <img
-            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80"
+            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80"
             alt="Sports Court"
-            className="w-full h-48 md:h-64 object-cover"
+            className="w-full h-56 md:h-72 object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent flex flex-col justify-end p-4 md:p-8">
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-2">Book Local Sports Courts in Seconds</h1>
-            <p className="text-base md:text-lg text-gray-200 mb-4">Real-time availability for badminton, turf, tennis and more. Create or join matches near you.</p>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-5 md:p-8">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-2">Find Players & Venues Nearby</h1>
+            <p className="text-base md:text-lg text-white/90 mb-4 max-w-2xl">Seamlessly explore sports venues and play with sports enthusiasts just like you!</p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="/venues" className="px-5 py-2 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 transition text-center">Find a Venue</a>
-              <a href="/my-bookings" className="px-5 py-2 bg-white bg-opacity-80 text-gray-900 rounded font-semibold hover:bg-gray-100 transition text-center">View My Bookings</a>
+              <a href="/venues" className="btn-primary text-center">Find a Venue</a>
+              <a href="/my-bookings" className="btn-outline text-center">View My Bookings</a>
             </div>
           </div>
         </div>
       </section>
 
       {/* CATEGORIES */}
-      <section className="max-w-4xl md:max-w-5xl mx-auto mt-8 md:mt-10 px-2 md:px-0">
+      <section className="max-w-5xl mx-auto mt-8 md:mt-12 px-3 md:px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {CATEGORIES.map(cat => (
-            <div key={cat.name} className="bg-white rounded-lg shadow p-4 md:p-5 flex flex-col items-start">
-              <span className="text-base md:text-lg font-bold text-blue-700 mb-1">{cat.name}</span>
-              <span className="text-xs text-gray-500 mb-2">{cat.venues} venues</span>
-              <span className="text-xs bg-blue-100 text-blue-700 rounded px-2 py-1 font-semibold">Popular</span>
+            <div key={cat.name} className="card p-5 flex flex-col items-start">
+              <span className="text-base md:text-lg font-bold text-[var(--color-primary)] mb-1">{cat.name}</span>
+              <span className="text-xs text-slate-500 mb-2">{cat.venues} venues</span>
+              <span className="badge-accent">Popular</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* POPULAR VENUES */}
-      <section className="max-w-4xl md:max-w-5xl mx-auto mt-10 md:mt-12 px-2 md:px-0">
+      <section className="max-w-5xl mx-auto mt-10 md:mt-14 px-3 md:px-4">
         <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-2 md:gap-0">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800">Popular Venues</h2>
-          <a href="/venues" className="text-blue-600 font-semibold hover:underline">View all</a>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800">Popular Venues</h2>
+          <a href="/venues" className="text-[var(--color-primary)] font-semibold hover:underline">View all</a>
         </div>
         {loading ? (
-          <div className="text-center text-gray-500">Loading venues...</div>
+          <div className="text-center text-slate-500">Loading venues...</div>
         ) : venues.length === 0 ? (
-          <div className="text-center text-gray-500">No venues available.</div>
+          <div className="text-center text-slate-500">No venues available.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {venues.map(venue => (
