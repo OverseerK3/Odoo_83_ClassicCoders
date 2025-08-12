@@ -59,7 +59,7 @@ const FacilityManagement = () => {
   const fetchVenues = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/venues`, { headers });
+      const res = await fetch('http://localhost:5000/api/venues/my-venues', { headers });
       if (!res.ok) throw new Error('Failed to fetch venues');
       const data = await res.json();
       setVenues(data);
@@ -76,8 +76,8 @@ const FacilityManagement = () => {
     e.preventDefault();
     try {
       const url = editingVenue 
-        ? `${API_BASE}/venues/${editingVenue._id}`
-        : `${API_BASE}/venues`;
+        ? `http://localhost:5000/api/venues/${editingVenue._id}`
+        : `http://localhost:5000/api/venues`;
       
       const method = editingVenue ? 'PUT' : 'POST';
       
@@ -120,7 +120,7 @@ const FacilityManagement = () => {
     if (!confirm('Are you sure you want to delete this venue?')) return;
     
     try {
-      const res = await fetch(`${API_BASE}/venues/${venueId}`, {
+      const res = await fetch(`http://localhost:5000/api/venues/${venueId}`, {
         method: 'DELETE',
         headers
       });

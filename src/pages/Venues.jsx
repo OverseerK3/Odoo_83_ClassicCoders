@@ -15,39 +15,8 @@ const API_BASE = 'http://localhost:5000/api/venues';
 const locations = ['All Locations', 'Ahmedabad', 'Rajkot', 'Surat', 'Vadodara', 'Gandhinagar', 'Mehsana', 'Palanpur', 'Bhavnagar'];
 const sports = ['All Sports', 'Badminton', 'Football', 'Cricket', 'Tennis', 'Table Tennis', 'Basketball', 'Swimming'];
 
-// Static venue cards for UI display (only 2 as requested)
-const staticVenues = [
-  {
-    id: 'static-1',
-    name: 'Premium Sports Arena',
-    rating: 4.8,
-    reviews: 25,
-    location: 'Science City, Ahmedabad',
-    sport: 'Multi-Sport',
-    tags: ['Premium', 'Indoor', 'AC', 'Parking'],
-    image: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=400&q=80',
-    pricePerHour: 800,
-    description: 'State-of-the-art facilities with professional equipment and excellent ambiance.',
-    isStatic: true
-  },
-  {
-    id: 'static-2',
-    name: 'Elite Badminton Court',
-    rating: 4.6,
-    reviews: 18,
-    location: 'Vastrapur, Ahmedabad',
-    sport: 'Badminton',
-    tags: ['Indoor', 'Professional', 'Air-conditioned'],
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
-    pricePerHour: 600,
-    description: 'Professional badminton courts with wooden flooring and excellent lighting.',
-    isStatic: true
-  }
-];
-
 const Venues = () => {
   const [venues, setVenues] = useState([]);
-  const [allVenues, setAllVenues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState(null);
   const [filters, setFilters] = useState({
@@ -99,12 +68,6 @@ const Venues = () => {
       if (res.ok) {
         setVenues(data.venues || []);
         setPagination(data.pagination);
-        
-        // Combine static venues with dynamic ones for display
-        const combinedVenues = currentPage === 1 ? 
-          [...staticVenues, ...(data.venues || [])] : 
-          (data.venues || []);
-        setAllVenues(combinedVenues);
       }
     } catch (err) {
       console.error('Fetch venues error:', err);
@@ -287,7 +250,7 @@ const Venues = () => {
             </h2>
             {pagination && (
               <div className="text-slate-600">
-                Showing {((currentPage - 1) * 12) + 1}-{Math.min(currentPage * 12, pagination.totalVenues + (currentPage === 1 ? 2 : 0))} of {pagination.totalVenues + 2} venues
+                Showing {((currentPage - 1) * 12) + 1}-{Math.min(currentPage * 12, pagination.totalVenues)} of {pagination.totalVenues} venues
               </div>
             )}
           </div>
@@ -299,7 +262,7 @@ const Venues = () => {
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             <p className="text-slate-500 mt-4">Finding amazing venues...</p>
           </div>
-        ) : allVenues.length === 0 ? (
+        ) : venues.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-semibold text-slate-600 mb-2">No venues found</h3>
@@ -314,21 +277,12 @@ const Venues = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-              {allVenues.map(venue => (
+              {venues.map(venue => (
                 <div 
-                  key={venue._id || venue.id} 
+                  key={venue._id} 
                   className="transform hover:scale-105 transition-transform duration-300"
                 >
-                  {venue.isStatic ? (
-                    <div className="relative">
-                      <VenueCard venue={venue} />
-                      <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
-                        Featured
-                      </div>
-                    </div>
-                  ) : (
-                    <VenueCard venue={venue} />
-                  )}
+                  <VenueCard venue={venue} />
                 </div>
               ))}
             </div>

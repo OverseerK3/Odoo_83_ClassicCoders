@@ -1,7 +1,37 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const Venue = require('../models/Venue');
+const User = require('../models/User');
 
 const router = express.Router();
+
+// Authentication middleware
+function auth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+  try {
+    const decoded = jwt.verify(token, 'your_jwt_secret');
+    req.userId = decoded.userId;
+    next();
+  } catch {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+}
+
+// Admin/Manager check middleware
+async function adminOrManager(req, res, next) {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user || (user.role !== 'admin' && user.role !== 'facility_manager')) {
+      return res.status(403).json({ message: 'Access denied. Admin or Facility Manager required.' });
+    }
+    req.user = user;
+    next();
+  } catch (err) {
+    return res.status(500).json({ message: 'Server error' });
+  }
+}
 
 // Get all venues with filtering and pagination
 router.get('/', async (req, res) => {
@@ -18,16 +48,16 @@ router.get('/', async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    const filter = { status: 'active' };
+    const filter = { isActive: true };
     
     // Location filter
     if (location && location !== 'all') {
       filter.location = { $regex: location, $options: 'i' };
     }
 
-    // Sport filter
+    // Sport filter  
     if (sport && sport !== 'all') {
-      filter.sport = { $regex: sport, $options: 'i' };
+      filter.sportsSupported = { $in: [new RegExp(sport, 'i')] };
     }
 
     // Search filter
@@ -41,9 +71,9 @@ router.get('/', async (req, res) => {
 
     // Price filter
     if (minPrice || maxPrice) {
-      filter.pricePerHour = {};
-      if (minPrice) filter.pricePerHour.$gte = Number(minPrice);
-      if (maxPrice) filter.pricePerHour.$lte = Number(maxPrice);
+      filter['pricing.hourlyRate'] = {};
+      if (minPrice) filter['pricing.hourlyRate'].$gte = Number(minPrice);
+      if (maxPrice) filter['pricing.hourlyRate'].$lte = Number(maxPrice);
     }
 
     const sort = {};
@@ -55,7 +85,8 @@ router.get('/', async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(Number(limit))
-      .populate('managerId', 'username email');
+      .populate('owner', 'username email')
+      .populate('manager', 'username email');
 
     const total = await Venue.countDocuments(filter);
     
@@ -75,18 +106,187 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get random venues (limit 8 for home page)
+// Create new venue (Any authenticated user can create venues)
+router.post('/', auth, async (req, res) => {
+  try {
+    const {
+      name,
+      location,
+      sport,
+      description,
+      capacity,
+      amenities,
+      sportsSupported,
+      hourlyRate,
+      operatingHours,
+      contactInfo,
+      image,
+      images
+    } = req.body;
+
+    if (!name || !location || !sport) {
+      return res.status(400).json({ message: 'Name, location, and sport are required' });
+    }
+
+    // Get user info to determine role
+    const user = await User.findById(req.userId);
+
+    const venue = new Venue({
+      name,
+      location,
+      sport,
+      description,
+      capacity,
+      amenities: amenities || [],
+      sportsSupported: sportsSupported || [sport],
+      owner: req.userId, // Set current user as owner
+      manager: user.role === 'facility_manager' ? req.userId : undefined,
+      pricing: {
+        hourlyRate: hourlyRate || 0,
+        currency: 'INR'
+      },
+      operatingHours: operatingHours || { open: '06:00', close: '22:00' },
+      contactInfo: contactInfo || {},
+      image,
+      images: images || []
+    });
+
+    await venue.save();
+    
+    const populatedVenue = await Venue.findById(venue._id)
+      .populate('owner', 'username email')
+      .populate('manager', 'username email');
+
+    res.status(201).json({
+      message: 'Venue created successfully',
+      venue: populatedVenue
+    });
+  } catch (err) {
+    console.error('Create venue error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update venue (Admin or venue owner/manager only)
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const venue = await Venue.findById(req.params.id);
+    if (!venue) {
+      return res.status(404).json({ message: 'Venue not found' });
+    }
+
+    const user = await User.findById(req.userId);
+    
+    // Check permissions
+    if (user.role !== 'admin' && 
+        venue.owner.toString() !== req.userId && 
+        venue.manager?.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const updates = req.body;
+    delete updates._id; // Prevent ID changes
+    
+    Object.assign(venue, updates);
+    await venue.save();
+
+    const updatedVenue = await Venue.findById(venue._id)
+      .populate('owner', 'username email')
+      .populate('manager', 'username email');
+
+    res.json({
+      message: 'Venue updated successfully',
+      venue: updatedVenue
+    });
+  } catch (err) {
+    console.error('Update venue error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete venue (Admin only)
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin required.' });
+    }
+
+    const venue = await Venue.findById(req.params.id);
+    if (!venue) {
+      return res.status(404).json({ message: 'Venue not found' });
+    }
+
+    // Soft delete - just mark as inactive
+    venue.isActive = false;
+    await venue.save();
+
+    res.json({ message: 'Venue deleted successfully' });
+  } catch (err) {
+    console.error('Delete venue error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get venues managed by current facility manager or owned by user
+router.get('/my-venues', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    
+    // Allow admins to see all venues, facility managers and regular users to see their venues
+    let filter;
+    if (user.role === 'admin') {
+      filter = {}; // Admins see all venues
+    } else {
+      filter = {
+        $or: [
+          { owner: req.userId },
+          { manager: req.userId }
+        ]
+      };
+    }
+
+    const venues = await Venue.find(filter)
+      .populate('owner', 'username email')
+      .populate('manager', 'username email')
+      .sort({ createdAt: -1 });
+
+    res.json(venues);
+  } catch (err) {
+    console.error('Get my venues error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get random venues for homepage
 router.get('/random', async (req, res) => {
   try {
-    const count = await Venue.countDocuments({ status: 'active' });
-    if (count === 0) {
-      return res.json([]);
-    }
-    
+    const count = parseInt(req.query.count) || 6;
     const venues = await Venue.aggregate([
-      { $match: { status: 'active' } },
-      { $sample: { size: Math.min(8, count) } }
+      { $match: { isActive: true } },
+      { $sample: { size: count } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'owner',
+          foreignField: '_id',
+          as: 'owner',
+          pipeline: [{ $project: { username: 1, email: 1 } }]
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'manager',
+          foreignField: '_id',
+          as: 'manager',
+          pipeline: [{ $project: { username: 1, email: 1 } }]
+        }
+      },
+      { $unwind: { path: '$owner', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$manager', preserveNullAndEmptyArrays: true } }
     ]);
+
     res.json(venues);
   } catch (err) {
     console.error('Get random venues error:', err);
@@ -94,25 +294,28 @@ router.get('/random', async (req, res) => {
   }
 });
 
-// Get featured venues for home page
+// Get featured venues for homepage
 router.get('/featured', async (req, res) => {
   try {
+    const count = parseInt(req.query.count) || 4;
     const venues = await Venue.find({ 
-      status: 'active',
+      isActive: true,
       featured: true 
     })
-    .sort({ rating: -1, createdAt: -1 })
-    .limit(8)
-    .populate('managerId', 'username email');
+    .limit(count)
+    .populate('owner', 'username email')
+    .populate('manager', 'username email')
+    .sort({ createdAt: -1 });
 
-    // If no featured venues, get top-rated ones
+    // If no featured venues, get the latest venues
     if (venues.length === 0) {
-      const topVenues = await Venue.find({ status: 'active' })
-        .sort({ rating: -1, createdAt: -1 })
-        .limit(8)
-        .populate('managerId', 'username email');
+      const latestVenues = await Venue.find({ isActive: true })
+        .limit(count)
+        .populate('owner', 'username email')
+        .populate('manager', 'username email')
+        .sort({ createdAt: -1 });
       
-      return res.json(topVenues);
+      return res.json(latestVenues);
     }
 
     res.json(venues);
@@ -122,30 +325,28 @@ router.get('/featured', async (req, res) => {
   }
 });
 
-// Get venue statistics for home page
+// Get venue statistics for homepage
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await Venue.aggregate([
-      { $match: { status: 'active' } },
-      {
-        $group: {
-          _id: '$sport',
-          count: { $sum: 1 },
-          avgPrice: { $avg: '$pricePerHour' },
-          avgRating: { $avg: '$rating' }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
-
-    const totalVenues = await Venue.countDocuments({ status: 'active' });
-    const locations = await Venue.distinct('location', { status: 'active' });
+    const totalVenues = await Venue.countDocuments({ isActive: true });
+    const totalLocations = await Venue.distinct('location', { isActive: true });
+    const totalSports = await Venue.distinct('sport', { isActive: true });
+    
+    // Get bookings count if bookings model exists
+    let totalBookings = 0;
+    try {
+      const Booking = require('../models/Booking');
+      totalBookings = await Booking.countDocuments({});
+    } catch (e) {
+      // Booking model might not exist yet
+      totalBookings = 0;
+    }
 
     res.json({
-      sports: stats,
       totalVenues,
-      locations: locations.length,
-      topLocations: locations.slice(0, 8)
+      totalLocations: totalLocations.length,
+      totalSports: totalSports.length,
+      totalBookings
     });
   } catch (err) {
     console.error('Get venue stats error:', err);
@@ -157,9 +358,10 @@ router.get('/stats', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const venue = await Venue.findById(req.params.id)
-      .populate('managerId', 'username email phone');
+      .populate('owner', 'username email phone')
+      .populate('manager', 'username email phone');
     
-    if (!venue) {
+    if (!venue || !venue.isActive) {
       return res.status(404).json({ message: 'Venue not found' });
     }
 

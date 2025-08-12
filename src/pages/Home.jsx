@@ -9,6 +9,7 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline';
 import VenueCard from '../components/VenueCard';
+import authService from '../utils/auth';
 
 const API_BASE = 'http://localhost:5000/api/venues';
 
@@ -27,12 +28,17 @@ const Home = () => {
     try {
       setLoading(true);
       
-      // Fetch all home page data in parallel
+      // Fetch all home page data in parallel - these endpoints don't require auth
       const [randomRes, featuredRes, statsRes] = await Promise.all([
         fetch(`${API_BASE}/random`),
         fetch(`${API_BASE}/featured`),
         fetch(`${API_BASE}/stats`)
       ]);
+
+      // Check if responses are ok
+      if (!randomRes.ok || !featuredRes.ok || !statsRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
 
       const [randomData, featuredData, statsData] = await Promise.all([
         randomRes.json(),
@@ -40,33 +46,21 @@ const Home = () => {
         statsRes.json()
       ]);
 
-      setVenues(randomData || []);
-      setFeaturedVenues(featuredData || []);
-      setStats(statsData || null);
+      // Ensure data is arrays
+      setVenues(Array.isArray(randomData) ? randomData : []);
+      setFeaturedVenues(Array.isArray(featuredData) ? featuredData : []);
+      setStats(statsData || {});
       setError('');
     } catch (err) {
       console.error('Fetch home data error:', err);
       setError('Failed to load content');
+      // Set empty arrays on error
+      setVenues([]);
+      setFeaturedVenues([]);
+      setStats({});
     } finally {
       setLoading(false);
     }
-  };
-
-  const getTopSports = () => {
-    if (!stats?.sports) return [];
-    return stats.sports.slice(0, 4);
-  };
-
-  const getSportIcon = (sport) => {
-    const sportName = sport.toLowerCase();
-    if (sportName.includes('badminton')) return '🏸';
-    if (sportName.includes('football') || sportName.includes('soccer')) return '⚽';
-    if (sportName.includes('cricket')) return '🏏';
-    if (sportName.includes('tennis')) return '🎾';
-    if (sportName.includes('basketball')) return '🏀';
-    if (sportName.includes('swimming')) return '🏊';
-    if (sportName.includes('table tennis') || sportName.includes('ping pong')) return '🏓';
-    return '🏟️';
   };
 
   return (
@@ -93,10 +87,10 @@ const Home = () => {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <a 
-                  href="/venues" 
+                  href="/sports" 
                   className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg text-center"
                 >
-                  Explore Venues
+                  Browse Sports
                 </a>
                 <a 
                   href="/my-bookings" 
@@ -138,13 +132,13 @@ const Home = () => {
             
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-green-100 text-center">
               <div className="text-3xl mb-2">🌟</div>
-              <div className="text-2xl font-bold text-green-600">{stats.sports?.length || 0}</div>
+              <div className="text-2xl font-bold text-green-600">{stats.totalSports || 0}</div>
               <div className="text-sm text-slate-600">Sports Available</div>
             </div>
             
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100 text-center">
               <div className="text-3xl mb-2">📍</div>
-              <div className="text-2xl font-bold text-purple-600">{stats.locations}</div>
+              <div className="text-2xl font-bold text-purple-600">{stats.totalLocations || 0}</div>
               <div className="text-sm text-slate-600">Cities Covered</div>
             </div>
             
@@ -157,43 +151,65 @@ const Home = () => {
         </section>
       )}
 
-      {/* POPULAR SPORTS */}
+      {/* QUICK ACCESS SECTION */}
       <section className="max-w-6xl mx-auto mt-16 px-4 md:px-6">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">
-            Popular Sports
+            Quick Access
           </h2>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Choose from a wide variety of sports and find the perfect venue for your next game
+            Jump right into what you need - browse sports, find venues, or manage your bookings
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {getTopSports().map((sport, index) => (
-            <div 
-              key={sport._id} 
-              className="group bg-white hover:bg-blue-50 rounded-2xl p-6 shadow-lg border border-slate-100 hover:border-blue-200 transition-all duration-300 cursor-pointer transform hover:scale-105"
-            >
-              <div className="text-center">
-                <div className="text-5xl mb-4 group-hover:animate-bounce">
-                  {getSportIcon(sport._id)}
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2 capitalize">
-                  {sport._id}
-                </h3>
-                <div className="text-blue-600 font-semibold text-lg mb-1">
-                  {sport.count} venues
-                </div>
-                <div className="flex items-center justify-center gap-1 text-sm text-slate-500">
-                  <StarIcon className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  {sport.avgRating ? sport.avgRating.toFixed(1) : 'N/A'}
-                </div>
-                <div className="text-sm text-slate-600 mt-1">
-                  Avg: ₹{sport.avgPrice ? Math.round(sport.avgPrice) : 'N/A'}/hr
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <a 
+            href="/sports"
+            className="group bg-white hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 rounded-2xl p-8 shadow-lg border border-slate-100 hover:border-blue-200 transition-all duration-300 cursor-pointer transform hover:scale-105"
+          >
+            <div className="text-center">
+              <div className="text-6xl mb-4 group-hover:animate-bounce">🏆</div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">Browse Sports</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Explore different sports categories and find venues that match your interests
+              </p>
+              <div className="mt-4 inline-flex items-center text-blue-600 font-semibold">
+                View Sports →
               </div>
             </div>
-          ))}
+          </a>
+
+          <a 
+            href="/venues"
+            className="group bg-white hover:bg-gradient-to-br hover:from-green-50 hover:to-green-100 rounded-2xl p-8 shadow-lg border border-slate-100 hover:border-green-200 transition-all duration-300 cursor-pointer transform hover:scale-105"
+          >
+            <div className="text-center">
+              <div className="text-6xl mb-4 group-hover:animate-bounce">🏟️</div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">Find Venues</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Search and filter through our extensive collection of sports venues
+              </p>
+              <div className="mt-4 inline-flex items-center text-green-600 font-semibold">
+                Browse Venues →
+              </div>
+            </div>
+          </a>
+
+          <a 
+            href="/my-bookings"
+            className="group bg-white hover:bg-gradient-to-br hover:from-purple-50 hover:to-purple-100 rounded-2xl p-8 shadow-lg border border-slate-100 hover:border-purple-200 transition-all duration-300 cursor-pointer transform hover:scale-105"
+          >
+            <div className="text-center">
+              <div className="text-6xl mb-4 group-hover:animate-bounce">📅</div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-3">My Bookings</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Manage your upcoming bookings and view your booking history
+              </p>
+              <div className="mt-4 inline-flex items-center text-purple-600 font-semibold">
+                View Bookings →
+              </div>
+            </div>
+          </a>
         </div>
       </section>
 

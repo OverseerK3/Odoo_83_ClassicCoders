@@ -16,6 +16,7 @@ import {
   PlusIcon,
   XMarkIcon,
   PhotoIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -577,6 +578,13 @@ const AdminDashboard = () => {
             <p className="text-purple-100">Comprehensive platform analytics and booking management</p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => window.location.href = '/admin/facility-managers'}
+              className="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center gap-2"
+            >
+              <UsersIcon className="w-4 h-4" />
+              Manage Facility Managers
+            </button>
             <button
               onClick={handleAddVenue}
               className="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 flex items-center gap-2"

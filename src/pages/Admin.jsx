@@ -5,13 +5,15 @@ import {
   BuildingOffice2Icon, 
   CalendarIcon,
   CogIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import UserManagement from '../components/admin/UserManagement';
 import VenueManagement from '../components/admin/VenueManagement';
 import BookingManagement from '../components/admin/BookingManagement';
 import SystemSettings from '../components/admin/SystemSettings';
+import FacilityManagerManagement from '../components/admin/FacilityManagerManagement';
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -61,6 +63,12 @@ const Admin = () => {
       label: 'Booking Management', 
       icon: <CalendarIcon className="w-5 h-5" />,
       component: <BookingManagement />
+    },
+    { 
+      id: 'facility-managers', 
+      label: 'Facility Managers', 
+      icon: <UsersIcon className="w-5 h-5" />,
+      component: <FacilityManagerManagement />
     },
     { 
       id: 'settings', 

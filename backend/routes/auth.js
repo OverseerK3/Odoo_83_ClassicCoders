@@ -185,7 +185,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email not verified. Please verify your email first.', requiresVerification: true });
     }
 
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET || 'fallback_jwt_secret', { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '7d' });
 
     return res.json({
       token,
@@ -206,15 +206,25 @@ router.post('/login', async (req, res) => {
 // Auth middleware
 function auth(req, res, next) {
   const header = req.headers.authorization || '';
+  console.log('Authorization header:', header);
+  
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
+  console.log('🎫 Token extracted:', token ? token.substring(0, 20) + '...' : 'None');
+  
+  if (!token) {
+    console.log('❌ No token provided');
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_jwt_secret');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+    console.log('✅ Token verified for user:', decoded.userId, 'role:', decoded.role);
     req.userId = decoded.userId;
     req.userRole = decoded.role;
     next();
-  } catch {
-    return res.status(401).json({ message: 'Invalid token' });
+  } catch (error) {
+    console.log('❌ Token verification failed:', error.message);
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 }
 
@@ -291,6 +301,52 @@ router.put('/change-password', auth, async (req, res) => {
     res.json({ message: 'Password changed successfully' });
   } catch (err) {
     console.error('Change password error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Refresh token endpoint
+router.post('/refresh-token', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '7d' });
+
+    return res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        location: user.location
+      }
+    });
+  } catch (err) {
+    console.error('Refresh token error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Check token validity
+router.get('/check-token', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    res.json({ 
+      valid: true, 
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        location: user.location
+      }
+    });
+  } catch (err) {
+    console.error('Check token error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

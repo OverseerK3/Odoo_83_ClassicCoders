@@ -35,9 +35,24 @@ function facilityManagerAuth(req, res, next) {
 // Dashboard Analytics
 router.get('/dashboard/stats', auth, async (req, res) => {
   try {
-    // Get user's venues
-    const venues = await Venue.find({ owner: req.userId });
+    // Get user's venues (venues they own or manage)
+    const venues = await Venue.find({
+      $or: [
+        { owner: req.userId },
+        { manager: req.userId }
+      ]
+    });
     const venueIds = venues.map(v => v._id);
+
+    if (venueIds.length === 0) {
+      return res.json({
+        totalBookings: 0,
+        activeCourts: 0,
+        totalEarnings: 0,
+        activeVenues: 0,
+        upcomingBookings: []
+      });
+    }
 
     // Total bookings for all user's venues
     const totalBookings = await Booking.countDocuments({ 
@@ -87,7 +102,12 @@ router.get('/dashboard/stats', auth, async (req, res) => {
 router.get('/dashboard/trends', auth, async (req, res) => {
   try {
     const { period = 'weekly' } = req.query;
-    const venues = await Venue.find({ owner: req.userId });
+    const venues = await Venue.find({
+      $or: [
+        { owner: req.userId },
+        { manager: req.userId }
+      ]
+    });
     const venueIds = venues.map(v => v._id);
 
     let dateRange;
@@ -135,7 +155,12 @@ router.get('/dashboard/trends', auth, async (req, res) => {
 // Peak hours analysis
 router.get('/dashboard/peak-hours', auth, async (req, res) => {
   try {
-    const venues = await Venue.find({ owner: req.userId });
+    const venues = await Venue.find({
+      $or: [
+        { owner: req.userId },
+        { manager: req.userId }
+      ]
+    });
     const venueIds = venues.map(v => v._id);
 
     const peakHours = await Booking.aggregate([
@@ -277,7 +302,12 @@ router.delete('/courts/:id', auth, async (req, res) => {
 router.get('/bookings', auth, async (req, res) => {
   try {
     const { status, date, page = 1, limit = 20 } = req.query;
-    const venues = await Venue.find({ owner: req.userId });
+    const venues = await Venue.find({
+      $or: [
+        { owner: req.userId },
+        { manager: req.userId }
+      ]
+    });
     const venueIds = venues.map(v => v._id);
 
     let query = { venue: { $in: venueIds } };
